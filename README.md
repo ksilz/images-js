@@ -22,11 +22,11 @@ node index.js allow
 Here's an example of blocking images with the Scraping Browser: 
 
 ```
-node index.js asfasdfsdfafd:asdfasdf
+node index.js asfaqdclgudkoi:kkodhcl
 ```
 
 Here's an example of allowing images with the Scraping Browser: 
 
 ```
-node index.js asfasdfsdfafd:asdfasdf allow
+node index.js asfaqdclgudkoi:kkodhcl allow
 ```
