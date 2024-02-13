@@ -11,32 +11,20 @@ async function go() {
   console.log("");
 
   const args = process.argv.slice(2);
-
-  console.log(`Parameters: ${args}`);
-
   let blockImages = true;
-  let useScrapingBrowser = true;
+  let useScrapingBrowser = false;
   let userNameAndPassword = null;
 
-// Check for specific command-line arguments to adjust the variables
   args.forEach(arg => {
     if (arg === "allow") {
       blockImages = false;
-    } else if (arg === "local") {
-      useScrapingBrowser = false;
     } else {
       userNameAndPassword = arg;
+      useScrapingBrowser = true;
     }
-
   });
 
   console.log(`Block images: ${blockImages}, use Scraping Browser: ${useScrapingBrowser}`);
-
-  if (useScrapingBrowser && !userNameAndPassword) {
-    console.log("You must provide a username and password for the scraping browser");
-    process.exit(1);
-  }
-
   console.log("Setting up Selenium...")
 
   const chromeOptions = new Options();
