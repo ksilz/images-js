@@ -38,37 +38,44 @@ async function go() {
   try {
     page = await browser.newPage();
 
-    if (blockImages) {
-      console.log('Blocking images...');
-      await page.setRequestInterception(true);
-
-      // Listen for requests
-      page.on('request', (request) => {
-        if (request.resourceType() === 'image') {
-          // If the request is for an image, block it
-          console.log('  Blocked an image!');
-          request.abort();
-        } else {
-          // If it's not an image request, allow it to continue
-          request.continue();
-        }
-      });
-    }
-
     console.log('Going to Indeed UK...');
-    const client = await page.target().createCDPSession();
+    /*
+        const client = await page.target().createCDPSession();
+    */
     await page.goto('https://indeed.co.uk');
-    let goOn = false;
+    let goOn = true;
 
-    try {
-      const {status} = await client.send('Captcha.solve', {detectTimeout: 30 * 1000});
-      console.log(`Captcha solve status: ${status}`)
-      goOn = status === 'solve_finished' || status === 'not_detected';
-    } catch (e) {
-      console.error('Captcha.solve failed:', e);
-    }
+    /*
+        try {
+          const {status} = await client.send('Captcha.solve', {detectTimeout: 60 * 1000});
+          console.log(`Captcha solve status: ${status}`)
+          goOn = status === 'solve_finished' || status === 'not_detected';
+        } catch (e) {
+          console.error('Captcha.solve failed:', e);
+        }
 
+    */
     if (goOn) {
+      if (blockImages) {
+        console.log('Blocking images...');
+        await page.setRequestInterception(true);
+
+        // Listen for requests
+        page.on('request', (request) => {
+          const resourceType = request.resourceType();
+
+          if (resourceType === 'image' || resourceType === 'font') {
+            // If the request is for an image, block it
+            console.log(`  Blocked an ${resourceType}!`);
+            request.abort();
+          } else {
+            // If it's not an image request, allow it to continue
+            request.continue();
+          }
+
+        });
+      }
+
       console.log('Looking for \'what\' field...');
       const fieldWhat = await page.locator('#text-input-what');
 
@@ -88,9 +95,9 @@ async function go() {
       await page.keyboard.press('Enter');
 
       console.log('Looking for results...');
-      const results = await page.locator('jobsearch-JobCountAndSortPane-jobCount');
+      const results = await page.$eval('.jobsearch-JobCountAndSortPane-jobCount', el => el.querySelector('span').textContent);
 
-      console.log('Results', results);
+      console.log(`Results: ${results}`);
     } else {
       console.log('Captcha not solved, finishing up');
     }
