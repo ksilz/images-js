@@ -26,20 +26,9 @@ async function go() {
   console.log(`Block images: ${blockImages}, use Scraping Browser: ${useScrapingBrowser}`);
   console.log(`Setting up browser...`)
 
-  /*
-    const chromeOptions = new Options();
-
-    if (blockImages) {
-      const prefs = {"profile.managed_default_content_settings.images": 2};
-      chromeOptions.setUserPreferences(prefs);
-    }
-
-  */
-
   const browser = useScrapingBrowser
     ? await chromium.connectOverCDP(`wss://${userNameAndPassword}@brd.superproxy.io:9222`)
     : await chromium.launch();
-
 
   try {
     let page = null;
