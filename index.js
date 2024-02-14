@@ -1,5 +1,4 @@
-const {Builder, Browser, By} = require('selenium-webdriver');
-const {Options} = require('selenium-webdriver/chrome');
+const { chromium } = require('playwright');
 
 function sleep(seconds) {
   console.log(`Sleeping for ${seconds} seconds...`);
@@ -25,8 +24,9 @@ async function go() {
   });
 
   console.log(`Block images: ${blockImages}, use Scraping Browser: ${useScrapingBrowser}`);
-  console.log("Setting up Selenium...")
+  console.log(`Setting up browser...`)
 
+/*
   const chromeOptions = new Options();
 
   if (blockImages) {
@@ -35,20 +35,24 @@ async function go() {
   }
 
   const server = useScrapingBrowser ? `https://${userNameAndPassword}@brd.superproxy.io:9515` : "";
-  const driver = await new Builder()
-    .forBrowser(Browser.CHROME)
-    .setChromeOptions(chromeOptions)
-    .usingServer(server)
-    .build();
+*/
+
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
 
   try {
     console.log("Going to Wikipedia...");
-    await driver.get("https://en.wikipedia.com");
+    await page.goto("https://en.wikipedia.com");
+
+    console.log('Taking screenshot...');
+    const timestamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, -5);
+    await page.screenshot({ path: `screenshot-${timestamp}.png`, fullPage: true});
+
     await sleep(20);
 
   } finally {
     console.log("Closing browser...");
-    await driver.quit();
+    await browser.close();
     console.log("");
     console.log("Done.");
   }
