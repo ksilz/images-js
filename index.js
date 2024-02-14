@@ -39,9 +39,21 @@ async function go() {
   const browser = useScrapingBrowser
     ? await chromium.connectOverCDP(`wss://${userNameAndPassword}@brd.superproxy.io:9222`)
     : await chromium.launch();
-  const page = await browser.newPage();
+
 
   try {
+    let page = null;
+
+    if (blockImages) {
+      console.log(`Configuring browser to block images...`)
+      const context = await browser.newContext({
+        fetchResourceTypesToBlock: ['image', 'font']
+      });
+      page = await context.newPage();
+    } else {
+      page = await browser.newPage();
+    }
+
     console.log("Going to Wikipedia...");
     await page.goto("https://en.wikipedia.com");
 

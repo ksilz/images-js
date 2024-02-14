@@ -1,12 +1,14 @@
 ## What's This?
 
-This project demonstrates how to block image downloads with Selenium in Java. That's both for a locally launched Chrome instance and a remote Bright Data Scraping Browser instance.
+This project demonstrates how to block image downloads with Selenium in Java. That's both for a headleass Chrome instance and a remote Bright Data Scraping Browser instance.
 
 ## How Does It Work?
 
-You need NodeJS (tested withe the current LTS 20.11.0) and the Google Chrome browser installed.
+You need NodeJS (tested with the current LTS 20.11.0). 
 
-You start it in a terminal with `node index.js`. By default, that will launch the English Wikipedia page in a **local** Chrome instance, with images blocked.
+Before you start, run `npm install` to install the dependencies. Then run `npx playwright install` to install the headless browsers.
+
+You start it in a terminal with `node index.js`. By default, that will launch open the English Wikipedia page in a headless Chrome instance, with images blocked. It takes a screenshot of the webpage and saves it to `screenshot-[current date and time].png` in the current directory.
 
 You can optionally provide two parameters in any order without dashes or the colons used below.
 
