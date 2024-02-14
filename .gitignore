@@ -78,5 +78,6 @@ temp/
 # MPS files
 .idea_modules/
 
-# Screenshots
+# Screenshots & Source
 screenshot*.png
+source*.html
