@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+const {chromium} = require('playwright');
 
 function sleep(seconds) {
   console.log(`Sleeping for ${seconds} seconds...`);
@@ -26,18 +26,19 @@ async function go() {
   console.log(`Block images: ${blockImages}, use Scraping Browser: ${useScrapingBrowser}`);
   console.log(`Setting up browser...`)
 
-/*
-  const chromeOptions = new Options();
+  /*
+    const chromeOptions = new Options();
 
-  if (blockImages) {
-    const prefs = {"profile.managed_default_content_settings.images": 2};
-    chromeOptions.setUserPreferences(prefs);
-  }
+    if (blockImages) {
+      const prefs = {"profile.managed_default_content_settings.images": 2};
+      chromeOptions.setUserPreferences(prefs);
+    }
 
-  const server = useScrapingBrowser ? `https://${userNameAndPassword}@brd.superproxy.io:9515` : "";
-*/
+  */
 
-  const browser = await chromium.launch();
+  const browser = useScrapingBrowser
+    ? await chromium.connectOverCDP(`wss://${userNameAndPassword}@brd.superproxy.io:9222`)
+    : await chromium.launch();
   const page = await browser.newPage();
 
   try {
@@ -46,7 +47,7 @@ async function go() {
 
     console.log('Taking screenshot...');
     const timestamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, -5);
-    await page.screenshot({ path: `screenshot-${timestamp}.png`, fullPage: true});
+    await page.screenshot({path: `screenshot-${timestamp}.png`, fullPage: true});
 
     await sleep(20);
 
