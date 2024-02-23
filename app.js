@@ -19,7 +19,7 @@ app.use(express.json()); // Middleware to parse JSON bodies
 
 function printIntro(message) {
   console.info(`****************************************************`)
-  console.info(message);
+  console.info(`${message}...`);
 }
 
 function printExtro(message, feedback) {
@@ -29,7 +29,7 @@ function printExtro(message, feedback) {
 }
 
 app.post('/configure', async (req, res) => {
-  printIntro('Configuring browser...');
+  printIntro('Configuring browser');
   const {useRemoteBrowser, blockImages, remoteUserName, remotePassword} = req.body;
 
   config.useRemoteBrowser = useRemoteBrowser;
@@ -66,7 +66,7 @@ app.post('/configure', async (req, res) => {
 
 
 app.post('/shutDown', async (req, res) => {
-  printIntro('Shutting down browser...');
+  printIntro('Shutting down browser');
   let feedback = false;
 
   try {
@@ -84,7 +84,7 @@ app.post('/shutDown', async (req, res) => {
 });
 
 app.post('/goToUrl', async (req, res) => {
-  printIntro('Going to URL...');
+  printIntro('Going to URL');
   const {url} = req.body;
   let feedback = false;
 
@@ -130,9 +130,19 @@ app.post('/searchForText', (req, res) => {
   res.send("Search results or error message");
 });
 
-app.get('/getSource', (req, res) => {
-  // Implement logic to return the HTML source code of the current page
-  res.send("HTML page source code");
+app.get('/getSource', async (req, res) => {
+  printIntro('Getting source of current page');
+  let source = null;
+
+  try {
+    source = await currentPage.content();
+  } catch (e) {
+    console.error("Error getting source of current page", e);
+  }
+
+  const feedback = source !== null && source !== undefined && source.length > 0;
+  printExtro('going to URL', feedback);
+  res.send(source);
 });
 
 app.listen(port, () => {
