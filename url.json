@@ -1,3 +1,4 @@
 {
-  "url": "https://indeed.co.uk"
+  "url": "https://indeed.co.uk",
+  "solveCaptcha": true
 }

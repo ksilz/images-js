@@ -1,7 +1,22 @@
 import express from "express";
 import fs from "fs";
 import puppeteer from "puppeteer";
-import {printIntro, printExtro, hasValue, hasText, clearField, submitField, isTrue} from './app-lib.js';
+import {
+  printIntro,
+  printExtro,
+  hasValue,
+  hasText,
+  clearField,
+  submitField,
+  isTrue,
+  SearchResult,
+  ID_INPUT_WHAT_SELECTOR,
+  ID_INPUT_WHERE_SELECTOR,
+  CLASS_NUMBER_OF_RESULTS_SELECTOR,
+  CLASS_BAD_QUERY_SELECTOR,
+  CAPTCHA_TIMEOUT_GOTO_URL,
+  CAPTCHA_TIMEOUT_SOLVE
+} from './app-lib.js';
 
 const app = express();
 const port = process.env.JOB_SEARCHER_NODE_PORT || 4267;
@@ -12,24 +27,6 @@ const config = {
   remoteUserName: '',      // default value
   remotePassword: ''       // default value
 };
-
-const SearchResult = Object.freeze({
-  NO_CURRENT_PAGE: "noCurrentPage",
-  NO_CURRENT_URL: "noCurrentUrl",
-  NO_INPUT: "noInput",
-  FAILED_CAPTCHA: "failedCaptcha",
-  NO_SEARCH_FIELD: "noSearchField",
-  JOBS_FOUND: "jobsFound",
-  JOBS_EMPTY: "jobsEmpty",
-  NO_JOBS_FOUND_EXPECTED: "noJobsFoundExpected",
-  NO_JOBS_FOUND_UNEXPECTED: "noJobsFoundUnexpected",
-  ERROR: "error"
-});
-
-const ID_INPUT_WHAT = "text-input-what";
-const ID_INPUT_WHERE = "text-input-where";
-const CLASS_NUMBER_OF_RESULTS = ".jobsearch-JobCountAndSortPane-jobCount";
-const CLASS_BAD_QUERY = "jobsearch-NoResult-messageContainer";
 
 let browser = null;
 let currentPage = null;
@@ -76,22 +73,15 @@ app.post('/configure', async (req, res) => {
 app.post('/shutDown', async (req, res) => {
   let feedback = printIntro('Shutting down browser');
 
-  try {
-    await browser.close();
-    feedback = true;
-  } catch (e) {
-    console.error("Error shutting down browser", e);
-  }
-
-  printExtro('shutting down browser', feedback);
   res.status(200).json({"success": feedback});
 
-  console.log(`Exiting the application...`)
+  feedback = true;
+
+  printExtro('shutting down browser', feedback);
+
   process.nextTick(process.exit());
 });
 
-const CAPTCHA_TIMEOUT_GOTO_URL = 2 * 60 * 1000;
-const CAPTCHA_TIMEOUT_SOLVE = 30 * 1000;
 app.post('/goToUrl', async (req, res) => {
   let feedback = printIntro('Going to URL');
   const {url, solveCaptcha} = req.body;
@@ -170,26 +160,26 @@ app.post('/searchForText', async (req, res) => {
         console.info(`  Searching for text: ${text}...`);
 
         try {
-          const searchField = currentPage.$(`#${ID_INPUT_WHAT}`);
+          const searchField = await currentPage.$(ID_INPUT_WHAT_SELECTOR);
 
           if (hasValue(searchField)) {
-            console.info(`  Clearing search field...`);
+            console.info(`  Clearing search field...`, searchField);
             await clearField(currentPage, searchField);
             console.info(`  Entering data into search field...`);
-            searchField.type(text);
+            await searchField.type(text);
 
-            const locationField = currentPage.$(`#${ID_INPUT_WHERE}`);
+            const locationField = await currentPage.$(ID_INPUT_WHERE_SELECTOR);
 
             if (hasValue(locationField)) {
               console.info(`  Submitting form through location field...`);
               await clearField(currentPage, locationField);
-              submitField(currentPage, locationField);
+              await submitField(currentPage, locationField);
             } else {
               console.info(`  Submitting form through search field...`);
-              submitField(currentPage, searchField);
+              await submitField(currentPage, searchField);
             }
 
-            const totalJobs = currentPage.$(CLASS_NUMBER_OF_RESULTS);
+            const totalJobs = await currentPage.$(CLASS_NUMBER_OF_RESULTS_SELECTOR);
 
             if (hasValue(totalJobs)) {
               returnValue = await totalJobs.evaluate(node => node.innerHTML);
@@ -203,7 +193,7 @@ app.post('/searchForText', async (req, res) => {
               }
 
             } else {
-              const noResults = currentPage.$(CLASS_BAD_QUERY);
+              const noResults = await currentPage.$(CLASS_BAD_QUERY_SELECTOR);
 
               if (hasValue(noResults)) {
                 returnStatus = SearchResult.NO_JOBS_FOUND_EXPECTED;
@@ -261,7 +251,7 @@ app.get('/getSource', async (req, res) => {
 });
 
 app.listen(port, () => {
-  printIntro(`NodeJS Browser starting`);
+  printIntro(`Browser starting`);
 
   try {
     fs.writeFileSync('node-pid.txt', process.pid.toString());
@@ -269,5 +259,23 @@ app.listen(port, () => {
     console.error("Error writing PID to file", e)
   }
 
-  console.info(`NodeJS Browser listening at http://localhost:${port}`);
+  printExtro(`Browser at http://localhost:${port}`, true);
+});
+
+process.on('exit', async () => {
+
+  try {
+
+    if (hasValue(browser)) {
+      console.info("  Stopping browser instance...");
+      await browser.close();
+      console.info("  Browser instance stopped.");
+    } else {
+      console.info("  No browser instance to close");
+    }
+
+  } catch (e) {
+    console.error("Error shutting down browser", e);
+  }
+
 });
