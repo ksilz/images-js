@@ -163,7 +163,7 @@ app.post('/searchForText', async (req, res) => {
           const searchField = await currentPage.$(ID_INPUT_WHAT_SELECTOR);
 
           if (hasValue(searchField)) {
-            console.info(`  Clearing search field...`, searchField);
+            console.info(`  Clearing search field...`);
             await clearField(currentPage, searchField);
             console.info(`  Entering data into search field...`);
             await searchField.type(text);
@@ -186,7 +186,7 @@ app.post('/searchForText', async (req, res) => {
 
               if (hasText(returnValue)) {
                 returnStatus = SearchResult.JOBS_FOUND;
-                console.info(`  Total jobs raw: ${text}`);
+                console.info(`  Got total jobs text`);
               } else {
                 returnStatus = SearchResult.JOBS_EMPTY;
                 console.warn("  Total jobs has no content!");
@@ -259,7 +259,7 @@ app.listen(port, () => {
     console.error("Error writing PID to file", e)
   }
 
-  printExtro(`Browser at http://localhost:${port}`, true);
+  printExtro(`starting browser: http://localhost:${port}`, true);
 });
 
 process.on('exit', async () => {
@@ -267,7 +267,6 @@ process.on('exit', async () => {
   try {
 
     if (hasValue(browser)) {
-      console.info("  Stopping browser instance...");
       await browser.close();
       console.info("  Browser instance stopped.");
     } else {
@@ -275,7 +274,7 @@ process.on('exit', async () => {
     }
 
   } catch (e) {
-    console.error("Error shutting down browser", e);
+    console.error("Error stopping browser instance", e);
   }
 
 });

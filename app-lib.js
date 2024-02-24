@@ -20,7 +20,7 @@ export const CAPTCHA_TIMEOUT_SOLVE = 30 * 1000;
 
 
 export function printIntro(message) {
-  console.info(`*******************************************************`)
+  console.info(`*************************************************************`)
   console.info(`${message.toUpperCase()}...`);
 
   return false;
@@ -28,7 +28,7 @@ export function printIntro(message) {
 
 export function printExtro(message, feedback) {
   console.info(`Done ${message}. Success: ${feedback}`);
-  console.info(`*******************************************************`)
+  console.info(`*************************************************************`)
   console.info(``)
 }
 
@@ -62,9 +62,9 @@ export async function clearField(currentPage, field) {
     if (hasText(enteredData)) {
       field.click();
       await currentPage.keyboard.down('Control');
-      await currentPage.press('A');
+      await currentPage.keyboard.press('A');
       await currentPage.keyboard.up('Control');
-      await currentPage.press('Backspace');
+      await currentPage.keyboard.press('Backspace');
     }
 
   } else {
