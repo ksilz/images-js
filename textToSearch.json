@@ -1,3 +1,13 @@
 {
-  "text": "(\"Java\") (developer or programmer or engineer or contractor or freelancer) (not \"JavaScript\" and not \"Java Script\")"
+  "text": "(\"Java\") (developer or programmer or engineer or contractor or freelancer) (not \"JavaScript\" and not \"Java Script\")",
+  "configBeforeSearch": {
+    "takeScreenshot": true,
+    "saveSource": true,
+    "label": "UK Java"
+  },
+  "configAfterSearch": {
+    "takeScreenshot": true,
+    "saveSource": true,
+    "label": "UK Java"
+  }
 }

@@ -2,6 +2,13 @@ import express from "express";
 import fs from "fs";
 import puppeteer from "puppeteer";
 import {
+  SearchResult,
+  ID_INPUT_WHAT_SELECTOR,
+  ID_INPUT_WHERE_SELECTOR,
+  CLASS_NUMBER_OF_RESULTS_SELECTOR,
+  CLASS_BAD_QUERY_SELECTOR,
+  CAPTCHA_TIMEOUT_GOTO_URL,
+  CAPTCHA_TIMEOUT_SOLVE,
   printIntro,
   printExtro,
   hasValue,
@@ -9,23 +16,19 @@ import {
   clearField,
   submitField,
   isTrue,
-  SearchResult,
-  ID_INPUT_WHAT_SELECTOR,
-  ID_INPUT_WHERE_SELECTOR,
-  CLASS_NUMBER_OF_RESULTS_SELECTOR,
-  CLASS_BAD_QUERY_SELECTOR,
-  CAPTCHA_TIMEOUT_GOTO_URL,
-  CAPTCHA_TIMEOUT_SOLVE
+  handleModalsAndCookies,
+  getSource,
+  saveScreenshotAndSources,
 } from './app-lib.js';
 
 const app = express();
 const port = process.env.JOB_SEARCHER_NODE_PORT || 4267;
 
 const config = {
-  useRemoteBrowser: false, // default value
-  blockImages: false,      // default value
-  remoteUserName: '',      // default value
-  remotePassword: ''       // default value
+  useRemoteBrowser: false,
+  blockImages: false,
+  remoteUserName: '',
+  remotePassword: '',
 };
 
 let browser = null;
@@ -75,6 +78,8 @@ app.post('/shutDown', async (req, res) => {
 
   res.status(200).json({"success": feedback});
 
+  await shutDownBrowser();
+
   feedback = true;
 
   printExtro('shutting down browser', feedback);
@@ -118,11 +123,11 @@ app.post('/goToUrl', async (req, res) => {
             const resourceType = request.resourceType();
 
             if (resourceType === 'image' || resourceType === 'font') {
-              // If the request is for an image, block it
-              console.log(`  Blocked an ${resourceType}!`);
+              /*
+                            console.log(`  Blocked an ${resourceType}!`);
+              */
               request.abort();
             } else {
-              // If it's not an image request, allow it to continue
               request.continue();
             }
 
@@ -145,11 +150,22 @@ app.post('/goToUrl', async (req, res) => {
   res.status(200).json({"success": feedback});
 });
 
+
 app.post('/searchForText', async (req, res) => {
   let feedback = printIntro('Searching for text');
+
+  const {
+    text,
+    "configBeforeSearch": {
+      "takeScreenshot": takeScreenshotBefore,
+      "saveSource": saveSourceBefore,
+      "label": labelBefore
+    },
+    "configAfterSearch": {"takeScreenshot": takeScreenshotAfter, "saveSource": saveSourceAfter, "label": labelAfter}
+  } = req.body;
+
   let returnValue = '';
   let returnStatus = SearchResult.ERROR;
-  const {text} = req.body;
 
   if (hasValue(currentPage)) {
     const currentUrl = currentPage.url();
@@ -158,6 +174,7 @@ app.post('/searchForText', async (req, res) => {
 
       if (hasText(text)) {
         console.info(`  Searching for text: ${text}...`);
+        await handleModalsAndCookies(currentPage);
 
         try {
           const searchField = await currentPage.$(ID_INPUT_WHAT_SELECTOR);
@@ -171,8 +188,13 @@ app.post('/searchForText', async (req, res) => {
             const locationField = await currentPage.$(ID_INPUT_WHERE_SELECTOR);
 
             if (hasValue(locationField)) {
-              console.info(`  Submitting form through location field...`);
               await clearField(currentPage, locationField);
+            }
+
+            await saveScreenshotAndSources(takeScreenshotBefore, saveSourceBefore, labelBefore, currentPage);
+
+            if (hasValue(locationField)) {
+              console.info(`  Submitting form through location field...`);
               await submitField(currentPage, locationField);
             } else {
               console.info(`  Submitting form through search field...`);
@@ -210,6 +232,8 @@ app.post('/searchForText', async (req, res) => {
             console.warn("  Search field not found");
           }
 
+          await saveScreenshotAndSources(takeScreenshotAfter, saveSourceAfter, labelAfter, currentPage);
+
           feedback = true;
         } catch (e) {
           console.error("  Error searching for text", e);
@@ -240,7 +264,7 @@ app.get('/getSource', async (req, res) => {
   let source = null;
 
   try {
-    source = await currentPage.content();
+    source = await getSource(currentPage);
     feedback = hasText(source);
   } catch (e) {
     console.error("Error getting source of current page", e);
@@ -262,19 +286,23 @@ app.listen(port, () => {
   printExtro(`starting browser: http://localhost:${port}`, true);
 });
 
-process.on('exit', async () => {
+async function shutDownBrowser() {
 
   try {
 
     if (hasValue(browser)) {
       await browser.close();
-      console.info("  Browser instance stopped.");
+      browser = null;
+      console.info("  Browser instance shut down.");
     } else {
-      console.info("  No browser instance to close");
+      console.info("  No browser instance to shut down ");
     }
 
   } catch (e) {
-    console.error("Error stopping browser instance", e);
+    console.error("Error shutting down browser instance", e);
   }
+}
 
+process.on('exit', async () => {
+  await shutDownBrowser();
 });

@@ -1,3 +1,5 @@
+import fs from "fs";
+
 export const SearchResult = Object.freeze({
   NO_CURRENT_PAGE: "noCurrentPage",
   NO_CURRENT_URL: "noCurrentUrl",
@@ -36,6 +38,10 @@ export function hasValue(thing) {
   return thing !== null && thing !== undefined;
 }
 
+export function hasElements(thing) {
+  return hasValue(thing) && thing.length > 0;
+}
+
 export function hasText(thing) {
   return thing !== null && thing !== undefined && thing.length > 0;
 }
@@ -43,7 +49,6 @@ export function hasText(thing) {
 export function isTrue(thing) {
   return hasValue(thing) && thing === true;
 }
-
 
 export async function clearField(currentPage, field) {
   let enteredData = " ";
@@ -60,10 +65,10 @@ export async function clearField(currentPage, field) {
     }
 
     if (hasText(enteredData)) {
-      field.click();
-      await currentPage.keyboard.down('Control');
-      await currentPage.keyboard.press('A');
-      await currentPage.keyboard.up('Control');
+      await field.click();
+      await currentPage.keyboard.down('ControlLeft');
+      await currentPage.keyboard.press('KeyA');
+      await currentPage.keyboard.up('ControlLeft');
       await currentPage.keyboard.press('Backspace');
     }
 
@@ -76,4 +81,76 @@ export async function clearField(currentPage, field) {
 export async function submitField(currentPage, field) {
   currentPage.waitForNavigation();
   await field.type('\n');
+}
+
+export async function handleModalsAndCookies(currentPage) {
+
+  try {
+    const closeButtons = await currentPage.$$("button[aria-label='close'], button[aria-label='Close']");
+    const cookieButtons = await currentPage.$$(`xpath/.//button[@id='onetrust-accept-btn-handler' or contains(text(), 'Accept All Cookies')]`);
+
+    const allButtons = [...closeButtons, ...cookieButtons];
+
+    if (hasElements(allButtons)) {
+      console.info(`  Handling ${allButtons.length} modals and cookies...`);
+
+      for (let button of allButtons) {
+
+        try {
+          await button.click();
+          console.info("  Done clicking button for modals and cookies");
+        } catch (e) {
+          /*
+                    console.error(`  Error clicking button for modals and cookies: ${e.toString()}`);
+          */
+          await saveScreenshotAndSources(false, true, "modal-error", currentPage);
+        }
+
+      }
+
+    } else {
+      console.info(`  NO modals and cookies found`);
+    }
+
+  } catch (e) {
+    console.error("  Error handling modals and cookies", e);
+  }
+
+}
+
+export function createFileName(isScreenshot, isBefore, label) {
+  const prefix = isScreenshot ? "screenshot" : "source";
+  const pointInTime = isBefore ? "before" : "after";
+  const extension = isScreenshot ? "png" : "html";
+  const realLabel = hasText(label) ? `-${label}` : "";
+  const now = new Date();
+  const timestamp = now.getFullYear() + "-" +
+    String(now.getMonth() + 1).padStart(2, '0') + "-" +
+    String(now.getDate()).padStart(2, '0') + "-" +
+    String(now.getHours()).padStart(2, '0') + "-" +
+    String(now.getMinutes()).padStart(2, '0') + "-" +
+    String(now.getSeconds()).padStart(2, '0');
+
+  return `${prefix}-${pointInTime}${realLabel}-${timestamp}.${extension}`;
+}
+
+export async function getSource(currentPage) {
+  return await currentPage.content();
+}
+
+export async function saveScreenshotAndSources(takeScreenshot, saveSource, label, currentPage) {
+
+  if (isTrue(takeScreenshot)) {
+    const fileName = createFileName(true, true, label);
+    console.info(`  Taking screenshot before search: ${fileName}...`);
+    await currentPage.screenshot(fileName);
+  }
+
+  if (isTrue(saveSource)) {
+    const fileName = createFileName(false, true, label);
+    console.info(`  Saving source before search: ${fileName}...`);
+    const source = await getSource(currentPage);
+    fs.writeFileSync(fileName, source);
+  }
+
 }
